@@ -46,11 +46,12 @@ def get_weather(lat, lon):
         response = re.get(url)
         response.raise_for_status()
         weather_data = response.json()
+        # print(weather_data)
         weather_data_2 = weather_data.get('current_weather_units')
+        # print(weather_data_2)
         weather_data_3 = weather_data.get('current_weather')
+        # print(weather_data_3)
         return {
-            # elevation=取得地の標高（メートル）
-            'hyoko':weather_data.get('elevation'),
             # temperature=摂氏温度の表記
             'seshi':weather_data_2.get('temperature'),
             # windspeed=風速の表記
@@ -64,11 +65,12 @@ def get_weather(lat, lon):
             # winddirection=現在の風向
             'hukou':weather_data_3.get('winddirection'),
             # weathercode=天気コード　例「0」= 快晴
-            'weathercode':weather_data_3.get('weathercode')}
+            'weathercode':weather_data_3.get('weathercode'),}
+            
     except re.exceptions.RequestException as e:
         print(f"天気情報の取得中にエラーが発生しました: {e}")
         return None
-
+    
 # 画面を更新(5分ごとに)する切り替えボタン関数
 koushin_btn_active = True
 def koushin_kirikae():
@@ -76,11 +78,8 @@ def koushin_kirikae():
    #  現在の状態を反転させる
     koushin_btn_active = not koushin_btn_active
 
-def tenki():
-   #  変数をグローバル化しているため取り扱い注意
-    global hyoko,kaze,hukou,tenko
-    # WMOコードで見る天気予報の一覧(0~99で表記)
-    wmo_weather_codes = {
+ # WMOコードで見る天気予報の一覧(0~99で表記)
+wmo_weather_codes = {
       0: "快晴",
       1: "主に晴れ",
       2: "部分的に曇り",
@@ -181,6 +180,11 @@ def tenki():
       97: "雷雨と並の雨",
       98: "雷雨と並の雪",
       99: "雷雨と強い雹"}
+
+def tenki():
+   #  変数をグローバル化しているため取り扱い注意
+    global kaze,hukou,tenko,x_lat,x_lon
+
    #  風向を東西南北表記するための辞書
     hukou_dic={
       0.0: "北 (N)",
@@ -206,8 +210,8 @@ def tenki():
        x_lat = x['lat']
        x_lon = x['lon']
        y = get_weather(x_lat,x_lon)
+       print(y)
 
-       hyoko = f'{y['hyoko']}m'
        kaze = f'{y['husoku']}{y['windspeed']}'
       # リスト内包により余分な表記がはいる可能性があるため使用時には hukou[0]として使う 
        hukou = [f'{hukou_dic[v]}' for v in hukou_dic if v <= y['hukou']]
@@ -218,10 +222,11 @@ def tenki():
           root.after(3000000,tenki)
        '''
     except:
+        print('pass')
         pass    
 
-# tenki()
-# print(f'現在の標高は{hyoko}\n天気は{tenko[0]}\n風速{kaze} {hukou[0]}')
+tenki()
+print(f'天気は{tenko[0]}\n風速{kaze} {hukou[0]}')
 
 # 過去のデータを取り扱うためのインポート
 from meteostat import Point,Hourly
@@ -462,3 +467,40 @@ Y_pred_xgb = model_xgb.predict(X_test)
 # モデルの評価
 print("\n--- 分類レポート（Classification Report） ---")
 print(classification_report(Y_test, Y_pred_xgb))
+
+url = f'https://api.open-meteo.com/v1/forecast?latitude={x_lat}&longitude={x_lon}&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,surface_pressure,weather_code&timezone=Asia/Tokyo'
+response = re.get(url)
+response.raise_for_status()
+weather_ai_or = response.json()
+weather_ai = pd.DataFrame(weather_ai_or['hourly'])
+weather_ai['time'] = pd.to_datetime(weather_ai['time'])
+print(weather_ai)
+
+x_yosoku = weather_ai[['temperature_2m','relative_humidity_2m','wind_speed_10m','wind_direction_10m','surface_pressure','weather_code']].copy()
+x_yosoku.columns = ['temp','rhum','wspd','wdir','pres','coco']
+
+''' AI予測に必要な要素
+x_ms = date_pan[['temp','rhum','wspd','wdir','pres','coco']].copy()
+temp	気温 (Temperature)	℃	kion
+rhum	相対湿度 (Relative Humidity)	%	rhum
+wspd	風速 (Wind Speed)	km/h	平均風速です。husoku
+wdir	風向 (Wind Direction)	°	0〜360度の角度で、風が吹いてくる方角を示します。北が0度です。hukou
+pres	気圧 (Pressure)	hPa	pres
+coco	天候コード (Weather Code)	-	雲量を示すのではなく、「晴れ」「曇り」「雨」などの天候を数値で表したコードです。weathercode
+'''
+
+Y_tomorrow_weather = model_xgb.predict(x_yosoku)
+print(Y_tomorrow_weather)
+y_sum = Y_tomorrow_weather.sum()
+print(y_sum)
+y_ps = y_sum / len(Y_tomorrow_weather)
+print(y_ps)
+rain_labels = {
+    0.05:"快晴",        # 0% ～ 5%
+    0.15:"ほぼ晴れ",   # 5% ～ 15%
+    0.35:"時々雨",     # 15% ～ 35%
+    0.65:"雨",         # 35% ～ 65%
+    1.0:"大雨"         # 65% ～ 100%
+}
+rain_labels_y = [rain_labels[v] for v in rain_labels if v > y_ps]
+print(f'明日は{rain_labels_y[0]} 降水確率は{y_ps*100:.1f}%')
