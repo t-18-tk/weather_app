@@ -79,61 +79,7 @@ X = x_ms
 Y = y_ms['rain']
 
 # 訓練データとテストデータに分割
-# test_size=0.2 は、テストデータを全体の20%に設定
-'''過学習とは
-モデルにすべてのデータを与えて学習させてしまうと、そのデータに対する答えは完璧になりますが、
-初めて見るデータに対してはうまく予測できない可能性があります。
-これを**過学習（overfitting）**と呼びます。
 
-過学習を防ぎ、モデルの汎用性を評価するために、以下の手順でデータを分割します。
-
-訓練データ（Training Data）: モデルの学習に使われるデータです。全体の約80%を使用するのが一般的です。
-
-テストデータ（Test Data）: 学習には一切使わず、モデルが完成した後に最終的な性能を評価するためだけに使うデータです。
-全体の約20%を使用します。
-'''
-# random_state=42 は、毎回同じ結果になるように乱数の種を固定
-'''geminiによるrandom_state=42の説明
-
-承知いたしました。random_state=42 について、詳しく説明します。
-
-これは、Scikit-learnや多くの機械学習ライブラリで使われる、**乱数の種（Seed）**を指定するための引数です。
-
-乱数と random_state
-コンピュータのプログラムで使われる「乱数」は、実は完全にランダム（予測不可能）ではありません。これは、**「疑似乱数」**と呼ばれ、ある特定の開始点（これを「種」と呼びます）から、決まった計算手順で生成される数列です。
-
-もし種が同じであれば、生成される乱数の数列は毎回同じになります。
-
-random_state=42は、その乱数の種を「42」という固定の数値に設定することを意味しています。
-
-なぜ random_state を使うのか？
-機械学習のプロセスには、乱数が使われる場面がいくつかあります。
-
-データの分割 (train_test_split): データを訓練用とテスト用にランダムにシャッフルして分割します。
-
-モデルの初期化: ランダムフォレストのように、初期のパラメータをランダムに設定するモデルがあります。
-
-もしrandom_stateを指定しないと、これらのランダムなプロセスがコードを実行するたびに異なる結果を生み出してしまいます。
-
-例えば、train_test_splitでrandom_stateを指定しない場合、
-
-1回目に実行したときは、たまたまテストデータに「珍しい豪雨のデータ」が多く含まれる。
-
-2回目に実行したときは、テストデータに「晴れの日」が多く含まれる。
-
-ということが起こり、これでは実行するたびにモデルの精度が変わってしまい、結果を比較したり、他の人にコードを共有したりすることが難しくなります。
-
-結論
-random_state=42 を指定する主な理由は、コードの再現性（Reproducibility）を確保するためです。
-
-誰がいつ実行しても、まったく同じ結果が得られることを保証します。
-
-モデルの改善（パラメータ調整など）を行う際に、その改善が「偶然」によるものなのか、「本質的な変更」によるものなのかを正確に判断できます。
-
-「42」という数字自体に特別な意味はなく、慣習として使われていることが多いです（映画「銀河ヒッチハイク・ガイド」で「生命、宇宙、そして万物についての究極の疑問の答え」が42だったことに由来すると言われています）。もちろん、他の整数（例：0や123）を指定しても構いません。
-
-重要なのは、**「乱数を使う処理には、必ず同じ random_state を指定する」**ということです。
-'''
 X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
 
 from sklearn.ensemble import RandomForestClassifier as RFC
@@ -153,95 +99,17 @@ if __name__ == '__main__':
    print(f"調整前: {Y_train.value_counts()}")
    print(f"調整後: {Y_train_resampled.value_counts()}")
 
-        # # 全体から80％抽出した訓練データを学習させる
-        # forest.fit(X_train,Y_train)
-
-        # '''学習したデータを保存できる
-        # # 学習済みモデルを一時的に保存
-        # # 将来的に同じモデルを再利用する場合に便利です。
-        # from joblib import dump
-        # dump(model, 'weather_prediction_model.joblib')
-        # print("学習済みモデルを 'weather_prediction_model.joblib' に保存しました。")
-        # '''
-
-        # from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
-        # '''コードの解説
-        # model.predict(X_test):
-
-        # 学習済みのモデルmodelに対して、predict()メソッドを呼び出し、**テストデータX_test**を渡します。
-
-        # このメソッドは、X_testの各行（1時間ごとの気象データ）に対して、「雨が降る（1）」か「雨が降らない（0）」かを予測し、その結果をY_predという変数に格納します。
-
-        # accuracy_score(Y_test, Y_pred):
-
-        # **正解率（Accuracy）**を計算する関数です。
-
-        # 予測結果Y_predのうち、実際の正解Y_testと一致した割合を計算します。
-
-        # confusion_matrix(Y_test, Y_pred):
-
-        # 混同行列と呼ばれる表を出力します。これは、モデルがどのような間違いをしたのかを分かりやすく示してくれます。
-
-        # classification_report(Y_test, Y_pred):
-
-        # 分類レポートを出力します。これは、正解率だけでなく、より詳細な評価指標（precision、recall、f1-scoreなど）を分かりやすくまとめてくれます。
-
-        # このステップを実行することで、あなたが構築したモデルが、未知のデータに対してどの程度の予測能力を持つかを客観的に評価できます。
-
-        # 実行後の結果について
-        # このコードを実行すると、コンソールにaccuracyやconfusion_matrixの結果が表示されます。
-
-        # accuracyが1.0に近いほど、モデルは正確です。
-
-        # もし結果が期待に沿わない場合は、特徴量（x_ms）の見直しや、モデルのパラメータ調整（例：n_estimatorsを増やす）といった改善を試みることができます。
-        # '''
-        # print("--- モデルの評価を開始します ---")
-
-        # # 1. テストデータで予測を実行
-        # # predict() メソッドが予測を実行する
-        # Y_pred = forest.predict(X_test)
-
-        # # 2. モデルの精度（正解率）を計算
-        # accuracy = accuracy_score(Y_test, Y_pred)
-        # print(f"モデルの精度（Accuracy）: {accuracy:.4f}")
-
-        # # 3. 混同行列（Confusion Matrix）で予測結果を詳細に分析
-        # print("\n--- 混同行列（Confusion Matrix） ---")
-        # print(confusion_matrix(Y_test, Y_pred))
-
-        # # 4. 分類レポートでさらに詳細な評価を確認
-        # print("\n--- 分類レポート（Classification Report） ---")
-        # print(classification_report(Y_test, Y_pred))
-        # '''
-        # precision (適合率)	モデルが「雨が降る」と予測したケースのうち、実際に雨が降った割合。	誤って「雨が降る」と予測するミスを減らしたい場合。<br>（例: 雨予報を信じて外出を取りやめたが、実際は晴れだった）
-        # recall (再現率)	実際に雨が降ったケースのうち、モデルが正しく「雨が降る」と予測できた割合。	雨が降るケースを見逃すミスを減らしたい場合。<br>（例: 雨予報を見逃して傘を持たずに外出したら、雨に降られた）
-        # f1-score	precisionとrecallのバランスを表す指標。	両方の指標をバランスよく高めたい場合。
-        # '''
-
-        # print("--- モデルの評価が完了しました ---")
-
 # ライブラリのインポート
 import xgboost as xgb
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 
 if __name__ == '__main__':
    print("--- XGBoostモデルの学習を開始します ---")
-''' 要素が重く雨が降らない結果の破損値が多きため調整
-# クラスの不均衡を考慮するための重みを計算
-# 雨が降らない（0）ケースの数 ÷ 雨が降る（1）ケースの数
-# この比率を scale_pos_weight に設定
-positive_class_count = (Y_train == 1).sum()
-negative_class_count = (Y_train == 0).sum()
-scale_pos_weight = negative_class_count / positive_class_count
-'''
+
 scale_pos_weight = 11
 if __name__ == '__main__':
    print(f"ポジティブクラスの重み (scale_pos_weight): {scale_pos_weight:.2f}")
 
-# XGBoostモデルを初期化
-# objective='binary:logistic': 二値分類を指定
-# eval_metric='logloss': 評価指標を指定
-# scale_pos_weight: クラスの不均衡を補正する重み
 model_xgb = xgb.XGBClassifier(
     objective='binary:logistic',
     eval_metric='logloss',
