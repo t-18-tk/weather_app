@@ -97,13 +97,6 @@ def get_weather(lat, lon):
         print(f"天気情報の取得中にエラーが発生しました: {e}")
         return None
     
-# 画面を更新(5分ごとに)する切り替えボタン関数
-koushin_btn_active = True
-def koushin_kirikae():
-    global koushin_btn_active
-   #  現在の状態を反転させる
-    koushin_btn_active = not koushin_btn_active
-
  # WMOコードで見る天気予報の一覧(0~99で表記)
 wmo_weather_codes = {
       0: "快晴",
